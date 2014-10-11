@@ -10,6 +10,7 @@ sys.path.insert(0, source_dir)
 from source.tests.test_notification_pusher import NotificationPusherTestCase
 from source.tests.test_redirect_checker import RedirectCheckerTestCase
 from source.tests.test_utils import *
+from source.tests.test_worker import *
 
 
 if __name__ == '__main__':
@@ -24,6 +25,9 @@ if __name__ == '__main__':
         unittest.makeSuite(GetTubeTestCase),
         unittest.makeSuite(SpawnWorkersTestCase),
         unittest.makeSuite(CheckNetworkStatusTestCase),
+
+        unittest.makeSuite(GetRedirectHistoryFromTask),
+        unittest.makeSuite(WorkerTestCase),
 
     ))
     result = unittest.TextTestRunner().run(suite)

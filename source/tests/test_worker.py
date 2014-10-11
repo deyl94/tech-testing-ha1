@@ -1,0 +1,68 @@
+import unittest
+import source.lib.worker
+import mock
+
+# def get_redirect_history_from_task(task, timeout, max_redirects=30, user_agent=None) tests
+
+
+class GetRedirectHistoryFromTask(unittest.TestCase):
+    @mock.patch('source.lib.worker.get_redirect_history', mock.Mock(return_value=[['ERROR'], 'ololo.ru', []]))
+    def test_if_error_and_not_is_recheck(self):
+        task = mock.Mock()
+        task.data = {'recheck': False,
+                     'url': 'ololo.ru',
+                     'url_id': 42}
+        result = source.lib.worker.get_redirect_history_from_task(
+            task, 42, max_redirects=30, user_agent=None)
+        self.assertTrue(result[0])
+        self.assertTrue(result[1])
+
+    @mock.patch('source.lib.worker.get_redirect_history', mock.Mock(return_value=[['meta_tag'], 'ololo.ru', [4, 2]]))
+    def test_if_ok_and_not_suspicious(self):
+        task = mock.Mock()
+        task.data = {'recheck': True,
+                     'url': 'ololo.ru',
+                     'url_id': 42}
+        result = source.lib.worker.get_redirect_history_from_task(
+            task, 42, max_redirects=30, user_agent=None)
+        self.assertFalse(result[0])
+        self.assertEqual(result[1], {"url_id": 42,
+                                     "result": [['meta_tag'], 'ololo.ru', [4, 2]],
+                                     "check_type": "normal"})
+
+    @mock.patch('source.lib.worker.get_redirect_history', mock.Mock(return_value=[['meta_tag'], 'ololo.ru', [4, 2]]))
+    def test_if_ok_and_suspicious(self):
+        task = mock.Mock()
+        task.data = {'recheck': True,
+                     'url': 'ololo.ru',
+                     'url_id': 42,
+                     'suspicious': 'sometimes'}
+        result = source.lib.worker.get_redirect_history_from_task(
+            task, 42, max_redirects=30, user_agent=None)
+        self.assertFalse(result[0])
+        self.assertEqual(result[1], {"url_id": 42,
+                                     "result": [['meta_tag'], 'ololo.ru', [4, 2]],
+                                     "check_type": "normal",
+                                     "suspicious": 'sometimes'})
+
+    pass
+
+
+# get_redirect_history_from_task(task, timeout, max_redirects=30, user_agent=None) tests end
+
+# worker(config, parent_pid) tests
+
+
+class WorkerTestCase(unittest.TestCase):
+    def setUp(self):
+        source.lib.worker.logger.info = mock.Mock()
+
+    # @mock.patch('source.lib.worker.os.path.exists', mock.Mock(side_effect=[True, False]))
+    # @mock.patch('source.lib.worker.get_redirect_history_from_task', mock.Mock(return_value=(True, 'ololo')))
+    def test_parent_alive_result_and_is_input(self):
+        config = mock.MagicMock()
+        input_tube = mock.MagicMock()
+        output_tube = mock.MagicMock()
+        with mock.patch('source.lib.worker.get_tube', mock.Mock(return_value=[input_tube, output_tube])):
+            source.lib.worker.worker(config, 42)
+        self.assertTrue(input_tube.put.called)
