@@ -11,6 +11,7 @@ from source.tests.test_notification_pusher import NotificationPusherTestCase
 from source.tests.test_redirect_checker import RedirectCheckerTestCase
 from source.tests.test_utils import *
 from source.tests.test_worker import *
+from source.tests.test_lib_init import *
 
 
 if __name__ == '__main__':
@@ -28,6 +29,11 @@ if __name__ == '__main__':
 
         unittest.makeSuite(GetRedirectHistoryFromTask),
         unittest.makeSuite(WorkerTestCase),
+
+        unittest.makeSuite(ToUnicodeTestCase),
+        unittest.makeSuite(ToStrTestCase),
+        unittest.makeSuite(GetCountersTestCase),
+        # unittest.makeSuite(CheckForMetaTestCase),
 
     ))
     result = unittest.TextTestRunner().run(suite)

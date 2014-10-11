@@ -31,11 +31,11 @@ COUNTER_TYPES = (
 
 
 def to_unicode(val, errors='strict'):
-    return val if isinstance(val, unicode) else val.decode('utf8', errors=errors)
+    return val if isinstance(val, unicode) else str(val).decode('utf8', errors=errors)
 
 
 def to_str(val, errors='strict'):
-    return val.encode('utf8', errors=errors) if isinstance(val, unicode) else val
+    return val.encode('utf8', errors=errors) if isinstance(val, unicode) else str(val)
 
 
 def get_counters(content):
