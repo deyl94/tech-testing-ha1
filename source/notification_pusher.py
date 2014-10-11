@@ -78,7 +78,6 @@ def done_with_processed_tasks(task_queue):
     for _ in xrange(task_queue.qsize()):
         try:
             task, action_name = task_queue.get_nowait()
-
             logger.debug('{name} task#{task_id}.'.format(
                 name=action_name.capitalize(),
                 task_id=task.task_id
