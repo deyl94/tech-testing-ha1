@@ -35,6 +35,7 @@ class DaemonizeTestCase(unittest.TestCase):
             source.lib.utils.daemonize()
 
     @mock.patch('source.lib.utils.os.fork', mock.Mock(side_effect=[0, 42]))
+    @mock.patch('source.lib.utils.os.setsid', mock.Mock())
     def test_daemonize_fork_fork_is_parent(self):
         m__exit = mock.Mock()
         with mock.patch('source.lib.utils.os._exit', m__exit):
