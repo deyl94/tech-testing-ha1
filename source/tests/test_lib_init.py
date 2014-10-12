@@ -49,7 +49,7 @@ class GetCountersTestCase(unittest.TestCase):
         self.assertTrue(len(result) > 0)
 
     def test_with_regexp(self):
-         self.assertEquals(1, len(source.lib.__init__.get_counters('http://google-analytics.com/ga.js')))
+        self.assertEquals(1, len(source.lib.__init__.get_counters('http://google-analytics.com/ga.js')))
 
     pass
 # get_counters(content) tests end
@@ -264,6 +264,48 @@ class MakePycurlRequestTestCase(unittest.TestCase):
 # prepare_url(url) tests
 
 class PrepareUrlTestCase(unittest.TestCase):
-    pass
-    # @patch('source.lib.__init__.')
-    # def test_all_branch(self):
+
+        
+    @mock.patch('source.lib.__init__.urlparse')
+    @mock.patch('source.lib.__init__.urlunparse')
+    @mock.patch('source.lib.__init__.quote')
+    @mock.patch('source.lib.__init__.quote_plus')
+    def test_all_branch(self, quote_plus, quote, urlunparse, urlparse):
+
+        url = mock.MagicMock()
+
+        scheme, netloc, path, qs, anchor, fragments = (
+            mock.MagicMock(), mock.MagicMock(), mock.MagicMock(), 
+            mock.MagicMock(), mock.MagicMock(), mock.MagicMock(),
+        )
+        urlparse.return_value = (scheme, netloc, path, qs, anchor, fragments)
+        urlunparse.return_value = '42'
+
+        netloc.encode.return_value = netloc
+
+        assert '42' == source.lib.__init__.prepare_url(url)
+
+    def test_url_is_none(self):
+        url = None
+        assert url == source.lib.__init__.prepare_url(url)
+
+    @mock.patch('source.lib.__init__.urlparse')
+    @mock.patch('source.lib.__init__.urlunparse')
+    @mock.patch('source.lib.__init__.quote')
+    @mock.patch('source.lib.__init__.quote_plus')
+    def test_exception(self, quote_plus, quote, urlunparse, urlparse):
+
+        url = mock.MagicMock()
+
+        scheme, netloc, path, qs, anchor, fragments = (
+            mock.MagicMock(), mock.MagicMock(), mock.MagicMock(), 
+            mock.MagicMock(), mock.MagicMock(), mock.MagicMock(),
+        )
+        urlparse.return_value = (scheme, netloc, path, qs, anchor, fragments)
+        urlunparse.return_value = '42'
+
+        netloc.encode.side_effect = UnicodeError
+
+        assert '42' == source.lib.__init__.prepare_url(url)
+
+# prepare_url(url) tests end
