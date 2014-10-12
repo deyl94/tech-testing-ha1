@@ -261,13 +261,19 @@ def load_config_from_pyfile(filepath):
 
     variables = {}
 
-    execfile(filepath, variables)
+    variables = exec_file(filepath)
 
     for key, value in variables.iteritems():
         if key.isupper():
             setattr(cfg, key, value)
 
     return cfg
+
+def exec_file(filepath):
+    variables = {}
+    execfile(filepath, variables)
+    return variables
+
 
 
 def install_signal_handlers():
