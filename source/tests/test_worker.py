@@ -7,7 +7,7 @@ from tarantool.error import DatabaseError
 # def get_redirect_history_from_task(task, timeout, max_redirects=30, user_agent=None) tests
 
 
-class GetRedirectHistoryFromTask(unittest.TestCase):
+class GetRedirectHistoryFromTaskTestCase(unittest.TestCase):
     @mock.patch('source.lib.worker.get_redirect_history', mock.Mock(return_value=[['ERROR'], 'ololo.ru', []]))
     def test_if_error_and_not_is_recheck(self):
         task = mock.Mock()

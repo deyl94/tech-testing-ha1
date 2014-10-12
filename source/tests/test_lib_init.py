@@ -362,6 +362,104 @@ class GetUrlTestCase(unittest.TestCase):
 pass
 # get_url(url, timeout, user_agent=None) tests end
 
+# get_redirect_history(url, timeout, max_redirects=30, user_agent=None) tests
+
+
+class GetRedirectHistoryTestCase(unittest.TestCase):
+
+    @mock.patch('source.lib.__init__.prepare_url')
+    @mock.patch('source.lib.__init__.re')
+    @mock.patch('source.lib.__init__.get_url')
+    @mock.patch('source.lib.__init__.get_counters')
+    def test_case(self, get_counters, get_url, re, prepare_url):
+        url = mock.MagicMock()
+        timeout = 1
+        max_redirects = 1
+        user_agent = mock.MagicMock()
+
+        redirect_url, redirect_type, content = (
+            mock.MagicMock(), mock.MagicMock(), None)
+
+        get_url.return_value = (redirect_url, redirect_type, content)
+        re.match.return_value = False
+        prepare_url.return_value = url
+
+        assert ([redirect_type], [url, redirect_url], []) == source.lib.__init__.get_redirect_history(url, timeout, max_redirects)
+
+    @mock.patch('source.lib.__init__.prepare_url')
+    @mock.patch('source.lib.__init__.re')
+    @mock.patch('source.lib.__init__.get_url')
+    @mock.patch('source.lib.__init__.get_counters')
+    def test_case_not_redirect_url(self, get_counters, get_url, re, prepare_url):
+        url = mock.MagicMock()
+        timeout = 1
+        max_redirects = 1
+        user_agent = mock.MagicMock()
+
+        redirect_url, redirect_type, content = (
+            None, mock.MagicMock(), None)
+
+        get_url.return_value = (redirect_url, redirect_type, content)
+        re.match.return_value = False
+        prepare_url.return_value = url
+
+        assert ([], [url], []) == source.lib.__init__.get_redirect_history(url, timeout, max_redirects)
+
+    @mock.patch('source.lib.__init__.prepare_url')
+    @mock.patch('source.lib.__init__.re')
+    def test_case_not_re(self, re, prepare_url):
+        url = mock.MagicMock()
+        timeout = 1
+        max_redirects = 1
+
+        re.match.return_value = True
+        prepare_url.return_value = url
+
+        assert ([], [url], []) == source.lib.__init__.get_redirect_history(url, timeout, max_redirects)
+
+    @mock.patch('source.lib.__init__.prepare_url')
+    @mock.patch('source.lib.__init__.re')
+    @mock.patch('source.lib.__init__.get_url')
+    @mock.patch('source.lib.__init__.get_counters')
+    def test_case_type_error(self, get_counters, get_url, re, prepare_url):
+        url = mock.MagicMock()
+        timeout = 1
+        max_redirects = 1
+        user_agent = mock.MagicMock()
+
+        redirect_url, redirect_type, content = (
+            mock.MagicMock(), 'ERROR', None)
+
+        get_url.return_value = (redirect_url, redirect_type, content)
+        re.match.return_value = False
+        prepare_url.return_value = url
+
+        assert source.lib.__init__.get_redirect_history(url, timeout, max_redirects) == (
+            ['ERROR'], [url, redirect_url], [])
+
+    @mock.patch('source.lib.__init__.prepare_url')
+    @mock.patch('source.lib.__init__.re')
+    @mock.patch('source.lib.__init__.get_url')
+    @mock.patch('source.lib.__init__.get_counters')
+    def test_case_not_break(self, get_counters, get_url, re, prepare_url):
+        url = mock.MagicMock()
+        timeout = 1
+        max_redirects = 2
+        user_agent = mock.MagicMock()
+
+        redirect_url, redirect_type, content = (
+            mock.MagicMock(), mock.MagicMock(), None)
+
+        get_url.return_value = (redirect_url, redirect_type, content)
+        re.match.return_value = False
+        prepare_url.return_value = url
+
+        assert source.lib.__init__.get_redirect_history(url, timeout, max_redirects) ==  (
+            [redirect_type, redirect_type], [url, redirect_url, redirect_url], [])
+
+    pass
+# get_redirect_history(url, timeout, max_redirects=30, user_agent=None) tests end
+
 # prepare_url(url) tests
 
 

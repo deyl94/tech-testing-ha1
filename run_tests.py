@@ -27,7 +27,7 @@ if __name__ == '__main__':
         unittest.makeSuite(SpawnWorkersTestCase),
         unittest.makeSuite(CheckNetworkStatusTestCase),
 
-        unittest.makeSuite(GetRedirectHistoryFromTask),
+        unittest.makeSuite(GetRedirectHistoryFromTaskTestCase),
         unittest.makeSuite(WorkerTestCase),
 
         unittest.makeSuite(ToUnicodeTestCase),
@@ -37,6 +37,7 @@ if __name__ == '__main__':
         unittest.makeSuite(FixMarketUrlTestCase),
         unittest.makeSuite(MakePycurlRequestTestCase),
         unittest.makeSuite(GetUrlTestCase),
+        unittest.makeSuite(GetRedirectHistoryTestCase),
         unittest.makeSuite(PrepareUrlTestCase),
 
     ))
