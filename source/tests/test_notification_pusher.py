@@ -411,3 +411,18 @@ class NotificationPusherTestCase(unittest.TestCase):
         notification_pusher.exit_code = exit_code
         notification_pusher.run_application = True
 
+    @patch('notification_pusher.exec_file')
+    @patch('notification_pusher.Config')
+    def test_load_config_from_pyfile_setattr(self, Config, execfile):
+        path = '/t/e/s/t'
+        cfg = Config()
+        varibles = mock.MagicMock()
+
+        varibles.iteritems.return_value = [('A', 'b')]
+
+        execfile.return_value = varibles
+
+        result = load_config_from_pyfile(path)
+        execfile.assert_called_once_with(path)
+        assert hasattr(result, 'A')
+
