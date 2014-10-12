@@ -31,13 +31,28 @@ class NotificationPusherTestCase(unittest.TestCase):
         parser.assert_called_once_with(args=args)
 
     @patch('__builtin__.execfile')
+    def test_exec_file(self, execfile):
+        path = '/t/e/s/t'
+
+        assert {} == notification_pusher.exec_file(path)
+        execfile.assert_called_once_with(path, {})
+
+    @patch('notification_pusher.exec_file')
     @patch('notification_pusher.Config')
     def test_load_config_from_pyfile(self, Config, execfile):
         path = '/t/e/s/t'
         cfg = Config()
-        result = load_config_from_pyfile(path)
+        varibles = mock.MagicMock()
+        key = mock.MagicMock()
+        value = Mock()
+
+        varibles.iteritems.return_value = [(key, value)]
+        key.isupper.return_value = False
+
+        execfile.return_value = varibles
         
-        execfile.assert_called_once_with(path, {})
+        result = load_config_from_pyfile(path)
+        execfile.assert_called_once_with(path)
         assert result == cfg
 
     @patch.object(gevent, 'signal')
@@ -132,6 +147,16 @@ class NotificationPusherTestCase(unittest.TestCase):
         notification_pusher.daemonize()
         os_setsid.assert_called_once_with()
         os_exit.assert_called_once_with(0)
+
+    @patch.object(os, '_exit')
+    @patch.object(os, 'setsid')
+    @patch.object(os, 'fork')
+    def test_daemonize_if_not_if(self, os_fork, os_setsid, os_exit):
+        os_fork.side_effect = [0, 0]
+
+        notification_pusher.daemonize()
+        os_setsid.assert_called_once_with()
+        assert 0 == os_exit.call_count
     
     @patch.object(os, '_exit')
     @patch.object(os, 'fork')
@@ -207,6 +232,49 @@ class NotificationPusherTestCase(unittest.TestCase):
 
         notification_pusher.run_application = True
 
+    @patch('notification_pusher.logger')
+    @patch('notification_pusher.notification_worker', Mock())
+    @patch('notification_pusher.sleep')
+    @patch('notification_pusher.Pool')
+    @patch.object(gevent.queue, 'Queue')
+    @patch.object(tarantool_queue, 'Queue')
+    @patch('notification_pusher.done_with_processed_tasks')
+    def test_main_loop_not_if_task(self, done_with_processed_tasks, tarantool_queue, 
+                    gevent_queue, gevent_pool, gevent_sleep, logger):
+        config_mock = mock.MagicMock()
+        config_mock.QUEUE_HOST = 1
+        config_mock.QUEUE_PORT = 1
+        config_mock.QUEUE_SPACE = 1
+        config_mock.QUEUE_TUBE = 1
+        config_mock.SLEEP = 1
+        config_mock.WORKER_POOL_SIZE = 1
+
+        #STOP WHILE
+        def change_state(*args, **kwargs):
+            notification_pusher.run_application = False
+        gevent_sleep.side_effect = change_state
+
+        worker_pool_mock = mock.MagicMock()
+        worker_pool_mock.free_count.return_value = 1
+
+        tube_mock = mock.MagicMock()
+        tube_mock.take.return_value = False
+
+        queue = Mock()
+        queue.tube.return_value = tube_mock
+
+        tarantool_queue.return_value = queue
+
+        gevent_pool.return_value = worker_pool_mock
+
+        processed_task_mock = Mock()
+        gevent_queue.return_value = processed_task_mock
+
+        notification_pusher.main_loop(config_mock)
+        done_with_processed_tasks.assert_called_once_with(processed_task_mock)
+
+        notification_pusher.run_application = True
+
 
     @patch('notification_pusher.daemonize')
     @patch('notification_pusher.create_pidfile')
@@ -247,6 +315,47 @@ class NotificationPusherTestCase(unittest.TestCase):
         daemonize.assert_called_once_with()
         parse_cmd_args.assert_called_once_with(argv[1:])
         create_pidfile.assert_called_once_with(cmds.pidfile)
+        patch_all.assert_called_once_with()
+        install_signal_handlers.assert_called_once_with()
+        main_loop.assert_called_once_with(config)
+        
+        notification_pusher.exit_code = exit_code
+        notification_pusher.run_application = True
+
+    @patch('notification_pusher.load_config_from_pyfile')
+    @patch('notification_pusher.patch_all')
+    @patch('notification_pusher.dictConfig')
+    @patch('notification_pusher.parse_cmd_args')
+    @patch('notification_pusher.current_thread')
+    @patch('notification_pusher.install_signal_handlers')
+    @patch('notification_pusher.main_loop')
+    @patch('notification_pusher.sleep')
+    @patch('notification_pusher.logger')
+    @patch.object(os, 'path', mock.MagicMock())
+    def test_main_not_if(self, logger, sleep, main_loop, install_signal_handlers,
+                    current_thread, parse_cmd_args, dictConfig,
+                    patch_all, load_config_from_pyfile):
+
+        def change_state(*args, **kwargs):
+            notification_pusher.run_application = False
+
+        main_loop.side_effect = change_state
+
+        argv = [1, 2, 3, 4]
+        exit_code = notification_pusher.exit_code
+        notification_pusher.exit_code = 42
+
+        config = Mock()
+        config.LOGGING = Mock()
+        load_config_from_pyfile.return_value = config
+
+        cmds = mock.MagicMock()
+        cmds.daemon = False
+        cmds.pidfile = False
+        parse_cmd_args.return_value = cmds
+
+        assert 42 == notification_pusher.main(argv)
+        parse_cmd_args.assert_called_once_with(argv[1:])
         patch_all.assert_called_once_with()
         install_signal_handlers.assert_called_once_with()
         main_loop.assert_called_once_with(config)
@@ -301,3 +410,4 @@ class NotificationPusherTestCase(unittest.TestCase):
         
         notification_pusher.exit_code = exit_code
         notification_pusher.run_application = True
+
