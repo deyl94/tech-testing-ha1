@@ -104,12 +104,12 @@ class ParseCmdArgsTestCase(unittest.TestCase):
     def test_set_parser(self):
         with mock.patch('source.lib.utils.argparse.ArgumentParser', mock.Mock()) as m_argparse:
             source.lib.utils.parse_cmd_args([4, 2])
-        m_argparse.assert_called_once()
+        m_argparse.assert_called_once_with(description='')
 
     def test_set_args(self):
         with mock.patch('source.lib.utils.argparse.ArgumentParser.parse_args', mock.Mock()) as m_parse:
             source.lib.utils.parse_cmd_args([4, 2])
-        m_parse.assert_called_once([4, 2])
+        m_parse.assert_called_once_with(args=[4, 2])
     pass
 # parse_cmd_args(args, app_description='') tests end
 
