@@ -33,7 +33,11 @@ if __name__ == '__main__':
         unittest.makeSuite(ToUnicodeTestCase),
         unittest.makeSuite(ToStrTestCase),
         unittest.makeSuite(GetCountersTestCase),
-        # unittest.makeSuite(CheckForMetaTestCase),
+        unittest.makeSuite(CheckForMetaTestCase),
+        unittest.makeSuite(FixMarketUrlTestCase),
+        unittest.makeSuite(MakePycurlRequestTestCase),
+        unittest.makeSuite(GetUrlTestCase),
+        unittest.makeSuite(PrepareUrlTestCase),
 
     ))
     result = unittest.TextTestRunner().run(suite)

@@ -1,6 +1,7 @@
 import unittest
 import source.lib.__init__
 import mock
+from pycurl import error
 
 # to_unicode(val, errors='strict') tests
 
@@ -201,7 +202,7 @@ class FixMarketUrlTestCase(unittest.TestCase):
         result_url = 'http://play.google.com/store/apps/' + 'yeah'
 
         assert result_url == source.lib.__init__.fix_market_url(url)
-        url.lstrip.assert_called_once_with("market://"); 
+        url.lstrip.assert_called_once_with("market://")
 
     pass 
 # fix_market_url(url) tests end
@@ -209,8 +210,8 @@ class FixMarketUrlTestCase(unittest.TestCase):
 
 # make_pycurl_request(url, timeout, useragent=None) tests
 
+
 class MakePycurlRequestTestCase(unittest.TestCase):
-    
     @mock.patch('source.lib.__init__.pycurl')
     @mock.patch('source.lib.__init__.StringIO')
     @mock.patch('source.lib.__init__.to_str')
@@ -257,15 +258,114 @@ class MakePycurlRequestTestCase(unittest.TestCase):
         assert ('42', redirect_url) == source.lib.__init__.make_pycurl_request(url, timeout)
         curl.close.assert_called_once_with()
 
+    pass
 
 # make_pycurl_request(url, timeout, useragent=None) tests end
 
 
+# get_url(url, timeout, user_agent=None) tests
+class GetUrlTestCase(unittest.TestCase):
+    @mock.patch('source.lib.__init__.make_pycurl_request', mock.Mock(side_effect=['ololo', error()]))
+    def test_if_pycurl_error_second(self):
+        with mock.patch('source.lib.__init__.logger', mock.Mock()) as m_loger:
+            result = source.lib.__init__.get_url('ololo.ru', 42)
+            self.assertEqual(1, m_loger.error.call_count)
+            self.assertEqual('ololo.ru', result[0])
+            self.assertEqual('ERROR', result[1])
+            self.assertEqual(None, result[2])
+
+    @mock.patch('source.lib.__init__.make_pycurl_request', mock.Mock(side_effect=['ololo', ValueError()]))
+    def test_if_value_error_second(self):
+        with mock.patch('source.lib.__init__.logger', mock.Mock()) as m_loger:
+            result = source.lib.__init__.get_url('ololo.ru', 42)
+            self.assertEqual(1, m_loger.error.call_count)
+            self.assertEqual('ololo.ru', result[0])
+            self.assertEqual('ERROR', result[1])
+            self.assertEqual(None, result[2])
+
+    @mock.patch('source.lib.__init__.make_pycurl_request', mock.Mock(side_effect=[ValueError(), 'ololo']))
+    def test_if_value_error_first(self):
+        with mock.patch('source.lib.__init__.logger', mock.Mock()) as m_loger:
+            result = source.lib.__init__.get_url('ololo.ru', 42)
+            self.assertEqual(1, m_loger.error.call_count)
+            self.assertEqual('ololo.ru', result[0])
+            self.assertEqual('ERROR', result[1])
+            self.assertEqual(None, result[2])
+
+    @mock.patch('source.lib.__init__.make_pycurl_request', mock.Mock(side_effect=[error(), 'ololo']))
+    def test_if_pycurl_error_first(self):
+        with mock.patch('source.lib.__init__.logger', mock.Mock()) as m_loger:
+            result = source.lib.__init__.get_url('ololo.ru', 42)
+            self.assertEqual(1, m_loger.error.call_count)
+            self.assertEqual('ololo.ru', result[0])
+            self.assertEqual('ERROR', result[1])
+            self.assertEqual(None, result[2])
+
+    @mock.patch('source.lib.__init__.make_pycurl_request', mock.Mock(return_value=['ish', 'ololo.ru']))
+    def test_if_new_redirect_url_and_match(self):
+        with (mock.patch('source.lib.__init__.OK_REDIRECT', mock.Mock())):
+            with (mock.patch('source.lib.__init__.OK_REDIRECT.match', mock.Mock(return_value=True))):
+                result = source.lib.__init__.get_url('vk.ru', 42)
+                self.assertEqual(None, result[0])
+                self.assertEqual(None, result[1])
+                self.assertEqual('ish', result[2])
+
+    @mock.patch('source.lib.__init__.make_pycurl_request', mock.Mock(return_value=['ish', 'ololo.ru']))
+    @mock.patch('source.lib.__init__.check_for_meta', mock.Mock(return_value=None))
+    @mock.patch('source.lib.__init__.prepare_url', mock.Mock(return_value=None))
+    def test_redirect_url_and_not(self):
+        with (mock.patch('source.lib.__init__.OK_REDIRECT', mock.Mock())):
+            with (mock.patch('source.lib.__init__.OK_REDIRECT.match', mock.Mock(return_value=False))):
+                result = source.lib.__init__.get_url('vk.ru', 42)
+                self.assertEqual(None, result[0])
+                self.assertEqual(source.lib.__init__.REDIRECT_HTTP, result[1])
+                self.assertEqual('ish', result[2])
+
+    @mock.patch('source.lib.__init__.make_pycurl_request', mock.Mock(return_value=['ish', None]))
+    @mock.patch('source.lib.__init__.check_for_meta', mock.Mock(return_value='ololo.ru'))
+    @mock.patch('source.lib.__init__.prepare_url', mock.Mock(return_value='vk.com'))
+    def test_not_redirect_url_and_redirect_url_and_not_urlsplit(self):
+        urlsplit = mock.MagicMock()
+        urlsplit.scheme = mock.Mock(return_value='bugaga')
+        with (mock.patch('source.lib.__init__.OK_REDIRECT', mock.Mock())):
+            with (mock.patch('source.lib.__init__.OK_REDIRECT.match', mock.Mock(return_value=False))):
+                result = source.lib.__init__.get_url('vk.ru', 42)
+                self.assertEqual(source.lib.__init__.REDIRECT_META, result[1])
+                self.assertEqual('ish', result[2])
+
+    @mock.patch('source.lib.__init__.make_pycurl_request', mock.Mock(return_value=['ish', None]))
+    @mock.patch('source.lib.__init__.check_for_meta', mock.Mock(return_value=None))
+    @mock.patch('source.lib.__init__.prepare_url', mock.Mock(return_value='vk.com'))
+    def test_not_redirect_url_and_not_redirect_url_and_not_urlsplit(self):
+        urlsplit = mock.Mock()
+        urlsplit.scheme = 'market'
+        with (mock.patch('source.lib.__init__.OK_REDIRECT', mock.Mock())):
+            with (mock.patch('source.lib.__init__.OK_REDIRECT.match', mock.Mock(return_value=False))):
+                with (mock.patch('source.lib.__init__.urlsplit', mock.Mock(return_value=urlsplit))):
+                    result = source.lib.__init__.get_url('vk.ru', 42)
+                    self.assertEqual(None, result[1])
+                    self.assertEqual('ish', result[2])
+
+    @mock.patch('source.lib.__init__.make_pycurl_request', mock.Mock(return_value=['ish', 'ololo']))
+    @mock.patch('source.lib.__init__.prepare_url', mock.Mock(return_value='vk.com'))
+    def test_redirect_url_and_urlsplit(self):
+        urlsplit = mock.Mock()
+        urlsplit.scheme = 'market'
+        with (mock.patch('source.lib.__init__.OK_REDIRECT', mock.Mock())):
+            with (mock.patch('source.lib.__init__.OK_REDIRECT.match', mock.Mock(return_value=False))):
+                with (mock.patch('source.lib.__init__.urlsplit', mock.Mock(return_value=urlsplit))):
+                    with (mock.patch('source.lib.__init__.fix_market_url', mock.Mock())) as m_fix:
+                        result = source.lib.__init__.get_url('vk.ru', 42)
+                        self.assertEqual('ish', result[2])
+                        self.assertEqual(source.lib.__init__.REDIRECT_HTTP, result[1])
+                        self.assertEqual(1, m_fix.call_count)
+pass
+# get_url(url, timeout, user_agent=None) tests end
+
 # prepare_url(url) tests
 
-class PrepareUrlTestCase(unittest.TestCase):
 
-        
+class PrepareUrlTestCase(unittest.TestCase):
     @mock.patch('source.lib.__init__.urlparse')
     @mock.patch('source.lib.__init__.urlunparse')
     @mock.patch('source.lib.__init__.quote')
@@ -308,4 +408,5 @@ class PrepareUrlTestCase(unittest.TestCase):
 
         assert '42' == source.lib.__init__.prepare_url(url)
 
+    pass
 # prepare_url(url) tests end
